@@ -502,7 +502,7 @@ var Module = {
     var GDragonRubySplashScreen = '/metadata/html5_splash_screen.html'; // TODO: Parse from game_metadata.txt
 
     var imageBase64 = base64Encode(FS.readFile(GDragonRubyIcon, {}));
-    var splashScreen = FS.readFile(GDragonRubySplashScreen, { encoding: 'utf8' })
+    var splashScreen = FS.readFile(GDragonRubySplashScreen, { encoding: 'utf8' });
     splashScreen = splashScreen.replaceAll('$ICON', imageBase64);
     splashScreen = splashScreen.replaceAll('$GAME_TITLE', GDragonRubyGameTitle);
     splashScreen = splashScreen.replaceAll('$GAME_VERSION', GDragonRubyGameVersion);
