@@ -508,10 +508,11 @@ var Module = {
     splashScreen = splashScreen.replaceAll('$GAME_VERSION', GDragonRubyGameVersion);
     splashScreen = splashScreen.replaceAll('$DEV_TITLE', GDragonRubyDevTitle);
     var div = document.createElement('div');
-    div.outerHTML = splashScreen;
+    div.innerHTML = splashScreen;
+    div = div.firstChild
     div.id = 'clicktoplaydiv';
-    document.body.appendChild(div);
     div.addEventListener('click', Module.clickToPlayListener);
+    document.body.appendChild(div);
     window.gtk.play = Module.clickToPlayListener;
   },
   preRun: function() {
