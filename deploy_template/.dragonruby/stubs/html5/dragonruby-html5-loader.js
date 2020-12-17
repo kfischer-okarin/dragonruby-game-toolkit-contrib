@@ -499,56 +499,17 @@ var Module = {
     Module["callMain"]();  // go go go!
   },
   startClickToPlay: function() {
-    var base64 = base64Encode(FS.readFile(GDragonRubyIcon, {}));
+    var GDragonRubySplashScreen = '/metadata/html5_splash_screen.html'; // TODO: Parse from game_metadata.txt
+
+    var imageBase64 = base64Encode(FS.readFile(GDragonRubyIcon, {}));
+    var splashScreen = FS.readFile(GDragonRubySplashScreen, { encoding: 'utf8' })
+    splashScreen = splashScreen.replaceAll('$ICON', imageBase64);
+    splashScreen = splashScreen.replaceAll('$GAME_TITLE', GDragonRubyGameTitle);
+    splashScreen = splashScreen.replaceAll('$GAME_VERSION', GDragonRubyGameVersion);
+    splashScreen = splashScreen.replaceAll('$DEV_TITLE', GDragonRubyDevTitle);
     var div = document.createElement('div');
-    var leftPx = ((window.innerWidth - 640) / 2);
-    var leftPerc = Math.floor((leftPx / window.innerWidth) * 100);
+    div.outerHTML = splashScreen;
     div.id = 'clicktoplaydiv';
-    div.style.backgroundColor = 'rgb(40, 44, 52)';
-    div.style.left = leftPerc.toString() + "%";
-    div.style.top = '10%';
-    div.style.display = 'block';
-    div.style.position = 'absolute';
-    div.style.width = "640px"
-    div.style.height = "360px"
-
-
-
-    var img = new Image();
-    img.onload = function() {  // once we know its size, scale it, keeping aspect ratio.
-      var zoomRatio = 100.0 / this.width;
-      img.style.width = (zoomRatio * this.width.toString()) + "px";
-      img.style.height = (zoomRatio * this.height.toString()) + "px";
-      img.style.display = "block";
-      img.style['margin-left'] = 'auto';
-      img.style['margin-right'] = 'auto';
-    }
-
-    img.style.display = 'none';
-    img.src = 'data:image/png;base64,' + base64;
-    div.appendChild(img);
-
-
-    var p;
-
-    p = document.createElement('h1');
-    p.textContent = GDragonRubyGameTitle + " " + GDragonRubyGameVersion + " by " + GDragonRubyDevTitle;
-    p.style.textAlign = 'center';
-    p.style.color = '#FFFFFF';
-    p.style.width = '100%';
-    p.style['font-family'] = "monospace";
-    div.appendChild(p);
-
-    p = document.createElement('p');
-    p.innerHTML = 'Click here to begin.';
-    p.style['font-family'] = "monospace";
-    p.style['font-size'] = "20px";
-    p.style.textAlign = 'center';
-    p.style.backgroundColor = 'rgb(40, 44, 52)';
-    p.style.color = '#FFFFFF';
-    p.style.width = '100%';
-    div.appendChild(p);
-
     document.body.appendChild(div);
     div.addEventListener('click', Module.clickToPlayListener);
     window.gtk.play = Module.clickToPlayListener;
