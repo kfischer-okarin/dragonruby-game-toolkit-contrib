@@ -503,7 +503,7 @@ var Module = {
 
     var imageBase64 = base64Encode(FS.readFile(GDragonRubyIcon, {}));
     var splashScreen = FS.readFile(GDragonRubySplashScreen, { encoding: 'utf8' });
-    splashScreen = splashScreen.replaceAll('$ICON', imageBase64);
+    splashScreen = splashScreen.replaceAll('$ICON', 'data:image/png;base64,' + imageBase64);
     splashScreen = splashScreen.replaceAll('$GAME_TITLE', GDragonRubyGameTitle);
     splashScreen = splashScreen.replaceAll('$GAME_VERSION', GDragonRubyGameVersion);
     splashScreen = splashScreen.replaceAll('$DEV_TITLE', GDragonRubyDevTitle);
