@@ -116,15 +116,29 @@ module GTK
       end
     end
 
-    class << self
-      def get_packages_json_from_api
-        $gtk.parse_json `curl https://api.smaug.dev/packages` # FIXME: $gtk.http_get 'https://api.smaug.dev/packages'
-      end
+    def initialize
+      @request = nil
+      @state = :initial
+    end
 
-      def get_packages_from_api
-        packages_json = get_packages_json_from_api
-        packages_json.map { |package_json| Package.new(package_json) }
+    def tick(args)
+      case @state
+      when :loading_packages
+        return unless @request[:complete]
+
+        if @request[:http_response_code] == 200
+          package_jsons = $gtk.parse_json @request[:response_data]
+          @packages = package_jsons.map { |package_json| Package.new(package_json) }
+          @state = :packages_loaded
+        else
+          @state = :error
+        end
       end
+    end
+
+    def load_packages
+      @request = $gtk.http_get 'https://api.smaug.dev/packages'
+      @state = :loading_packages
     end
   end
 end
