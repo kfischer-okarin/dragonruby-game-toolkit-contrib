@@ -197,7 +197,7 @@ module GTK
       def initialize(client)
         @client = client
         @window_rect = [300, 100, 680, 520]
-        @close_button_rect = [@window_rect.right - 30, @window_rect.top - 30, 30, 30]
+        @close_button_rect = [@window_rect.right - 30, @window_rect.top - 30, 25, 25]
         @table_rect = [@window_rect.left + 5, @window_rect.bottom + 45, 300, @window_rect.h - 50 - 30]
         @table = Table.new(client, @table_rect)
         @visible = false
