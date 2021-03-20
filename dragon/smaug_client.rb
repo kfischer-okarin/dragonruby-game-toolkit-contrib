@@ -117,9 +117,87 @@ module GTK
     end
 
     class UI
-      def initialize
+      class Table
+        attr_rect
+
+        def initialize(client, rect)
+          @client = client
+          @x, @y, @w, @h = rect
+          @letter_height = $gtk.calcstringbox("W")[1]
+          @v_padding = 2
+          @columns = [
+            { label: 'Name', width: @w - 100, package_method: :name },
+            { label: 'Version', width: 100, package_method: :latest_version }
+          ]
+          @rows_area_height = @h - cell_height
+        end
+
+        def process_input(args)
+        end
+
+        def render(args)
+          args.outputs.reserved << [@x, @y, @w, @h, 255, 255, 255].border
+          draw_table_headers(args.outputs)
+          draw_table_rows(args)
+        end
+
+        def draw_table_headers(outputs)
+          x = @x
+          y = top - cell_height
+          @columns.each do |column|
+            draw_cell(outputs, x: x, y: y, w: column[:width], text: column[:label], r: 100, g: 100, b: 100)
+            x += column[:width]
+          end
+        end
+
+        def draw_table_rows(args)
+          return unless @client.packages
+
+          rows_target = args.outputs[:smaug_table_rows]
+          rows_target.width = @w
+          rows_target.height = @rows_area_height
+          x = 0
+          y = @rows_area_height - cell_height
+          @client.packages.each do |package|
+            @columns.each do |column|
+              draw_cell(rows_target, x: x, y: y, w: column[:width], text: package.send(column[:package_method]))
+              x += column[:width]
+            end
+            y -= cell_height
+            x = 0
+            break if y < -cell_height
+          end
+          args.outputs.reserved << [@x, @y, @w, @rows_area_height, :smaug_table_rows].sprite
+        end
+
+        def draw_cell(outputs, values)
+          outputs.reserved << [values[:x], values[:y], values[:w], cell_height, 255, 255, 255].border
+          if values[:r]
+            bg = [values[:x] + 1, values[:y] + 1, values[:w] - 2, cell_height - 2, values[:r], values[:g], values[:b]].solid
+            outputs.reserved << bg
+          end
+          outputs.reserved << {
+            x: values[:x] + values[:w] / 2,
+            y: values[:y] + @v_padding + @letter_height,
+            text: values[:text],
+            alignment_enum: 1,
+            r: 255, g: 255, b: 255
+          }.label
+        end
+
+        private
+
+        def cell_height
+          @letter_height + @v_padding * 2
+        end
+      end
+
+      def initialize(client)
+        @client = client
         @window_rect = [300, 100, 680, 520]
         @close_button_rect = [@window_rect.right - 30, @window_rect.top - 30, 30, 30]
+        @table_rect = [@window_rect.left + 5, @window_rect.bottom + 45, 300, @window_rect.h - 50 - 30]
+        @table = Table.new(client, @table_rect)
         @visible = false
       end
 
@@ -135,6 +213,7 @@ module GTK
         return unless @visible
 
         handle_x_button_click(args.inputs)
+        @table.process_input(args)
 
         args.inputs.mouse.clear if args.inputs.mouse.inside_rect?(@window_rect)
       end
@@ -144,6 +223,7 @@ module GTK
 
         draw_window(args.outputs, @window_rect)
         draw_x_button(args.outputs, @close_button_rect)
+        @table.render(args)
       end
 
       def draw_window(gtk_outputs, rect)
@@ -164,10 +244,12 @@ module GTK
       end
     end
 
+    attr_reader :packages
+
     def initialize
       @request = nil
       @state = :initial
-      @ui = UI.new
+      @ui = UI.new(self)
     end
 
     def show
