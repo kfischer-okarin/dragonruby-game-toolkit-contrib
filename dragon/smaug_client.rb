@@ -78,6 +78,8 @@ module GTK
       class Table
         attr_rect
 
+        attr_reader :x, :y, :w, :h
+
         def initialize(rect)
           @x, @y, @w, @h = rect
           @letter_height = UI.get_letter_height
@@ -149,12 +151,15 @@ module GTK
         end
       end
 
+      attr_rect
+
+      attr_reader :x, :y, :w, :h
+
       def initialize(client)
         @client = client
-        @window_rect = [300, 100, 680, 520]
-        @close_button_rect = [@window_rect.right - 30, @window_rect.top - 30, 25, 25]
-        @table_rect = [@window_rect.left + 5, @window_rect.bottom + 45, 300, @window_rect.h - 50 - 30]
-        @table = Table.new(@table_rect)
+        @x, @y, @w, @h = [300, 100, 680, 520]
+        @close_button_rect = [right - 30, top - 30, 25, 25]
+        @table = Table.new([left + 5, bottom + 45, 300, @h - 50 - 30])
         @visible = false
       end
 
@@ -172,20 +177,20 @@ module GTK
         handle_x_button_click(args.inputs)
         @table.process_input(args)
 
-        args.inputs.mouse.clear if args.inputs.mouse.inside_rect?(@window_rect)
+        args.inputs.mouse.clear if args.inputs.mouse.inside_rect? self
       end
 
       def render(args)
         return unless @visible
 
-        draw_window(args.outputs, @window_rect)
+        draw_window(args.outputs)
         draw_x_button(args.outputs, @close_button_rect)
         @table.render(args, @client.packages)
       end
 
-      def draw_window(gtk_outputs, rect)
-        gtk_outputs.reserved << [rect.x, rect.y, rect.w, rect.h, 255, 255, 255].border
-        gtk_outputs.reserved << [rect.x + 1, rect.y + 1, rect.w - 2, rect.h - 2, 0, 0, 0].solid
+      def draw_window(gtk_outputs)
+        gtk_outputs.reserved << [@x, @y, @w, @h, 255, 255, 255].border
+        gtk_outputs.reserved << [@x + 1, @y + 1, @w - 2, @h - 2, 0, 0, 0].solid
       end
 
       def draw_x_button(gtk_outputs, rect)
