@@ -89,9 +89,19 @@ module GTK
             { label: 'Version', width: 100, package_method: :latest_version }
           ]
           @rows_area_height = @h - cell_height
+          @selected_index = nil
         end
 
-        def process_input(args)
+        def process_input(args, packages)
+          return unless packages
+
+          mouse = args.inputs.mouse
+          return unless mouse.inside_rect?(self) && mouse.down
+
+          @selected_index = nil
+          y_in_table = mouse.y - @y
+          clicked_index = (@rows_area_height - y_in_table).div cell_height
+          @selected_index = clicked_index if (0...packages.size).include? clicked_index
         end
 
         def render(args, packages)
@@ -117,9 +127,11 @@ module GTK
           rows_target.height = @rows_area_height
           x = 0
           y = @rows_area_height - cell_height
-          packages.each do |package|
+          packages.each_with_index do |package, index|
             @columns.each do |column|
-              draw_cell(rows_target, x: x, y: y, w: column[:width], text: package.send(column[:package_method]))
+              cell_values = { x: x, y: y, w: column[:width], text: package.send(column[:package_method]) }
+              cell_values.update(r: 0, g: 100, b: 0) if index == @selected_index
+              draw_cell(rows_target, cell_values)
               x += column[:width]
             end
             y -= cell_height
@@ -175,7 +187,7 @@ module GTK
         return unless @visible
 
         handle_x_button_click(args.inputs)
-        @table.process_input(args)
+        @table.process_input(args, @client.packages)
 
         args.inputs.mouse.clear if args.inputs.mouse.inside_rect? self
       end
