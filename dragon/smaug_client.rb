@@ -69,12 +69,18 @@ module GTK
     # $gtk.openurl 'url' to open package page
 
     class UI
+      def self.get_letter_height(size_enum = nil)
+        args = ["w"]
+        args << size_enum if size_enum
+        $gtk.calcstringbox(*args)[1]
+      end
+
       class Table
         attr_rect
 
         def initialize(rect)
           @x, @y, @w, @h = rect
-          @letter_height = $gtk.calcstringbox("W")[1]
+          @letter_height = UI.get_letter_height
           @v_padding = 2
           @columns = [
             { label: 'Name', width: @w - 100, package_method: :name },
