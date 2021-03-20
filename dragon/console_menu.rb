@@ -109,11 +109,9 @@ module GTK
         # render
         args.outputs.reserved << @buttons.map { |b| b[:primitives] }
 
-        @smaug.render(args)
+        @smaug.tick(args)
 
         # inputs
-        @smaug.process_input(args)
-
         if args.inputs.mouse.click
           clicked = @buttons.find { |b| args.inputs.mouse.inside_rect? b[:rect] }
           if clicked

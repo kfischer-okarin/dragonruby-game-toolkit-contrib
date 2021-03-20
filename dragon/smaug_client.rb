@@ -251,15 +251,66 @@ module GTK
     def initialize
       @windows = $gtk.platform == 'Windows'
       @dr_directory = $gtk.binary_path[0..-12] # remove last 11 characters ("/dragonruby") from binary path
-      @smaug_state = check_smaug
       @request = nil
-      @state = :initial
+      @state = { name: :check_smaug }
       @ui = UI.new(self)
     end
 
     def show
       @ui.show
-      load_packages unless @packages
+      # load_packages unless @packages
+    end
+
+    def tick(args)
+      return unless @ui.visible?
+
+      puts @state
+      send(:"#{@state[:name]}_tick", args)
+    end
+
+    def check_smaug_tick(args)
+      if file_exists?(path_to(smaug_executable))
+        # @state = { name: :check_for_update }
+      else
+        @state = { name: :get_latest_smaug_release, next: :download_smaug }
+      end
+    end
+
+    def get_latest_smaug_release_tick(args)
+      @request ||= $gtk.http_get 'https://api.github.com/repos/ereborstudios/smaug/releases/latest'
+      return unless @request[:complete]
+
+      if @request[:http_response_code] == 200
+        response = $gtk.parse_json @request[:response_data]
+        @state = {
+          name: @state[:next],
+          release: { version: response['tag_name'], url: get_download_url(response['assets']) }
+        }
+      else
+        @state = { name: :error, message: 'Error while downloading Smaug' }
+      end
+      @request = nil
+    end
+
+    def download_smaug_tick(args)
+      @request ||= $gtk.http_get @state[:release][:url]
+      return unless @request[:complete]
+
+      if @request[:http_response_code] == 200
+        response = @request[:response_data]
+        $gtk.write_file_root(smaug_executable, response)
+        $gtk.system "chmod u+x #{path_to(smaug_executable)}" unless @windows
+        write_version_file
+        @state = { name: :finished }
+      elsif @request[:http_response_code] == 302
+        @state[:release][:url] = @request[:headers]['location']
+      else
+        @state = { name: :error, message: 'Error while downloading Smaug' }
+      end
+      @request = nil
+    end
+
+    def finished_tick(args)
     end
 
     def render(args)
@@ -292,10 +343,6 @@ module GTK
       @state = :loading_packages
     end
 
-    def check_smaug
-      return :not_downloaded unless file_exists? smaug_executable_path
-    end
-
     def file_exists?(file)
       if @windows
         `cmd /c if exist #{file} echo 1`.strip == '1'
@@ -304,8 +351,34 @@ module GTK
       end
     end
 
-    def smaug_executable_path
-      @smaug_executable_path ||= @windows ? "#{@dr_directory}/smaug.exe" : "#{@dr_directory}/smaug"
+    def path_to(filename)
+      "#{@dr_directory}/#{filename}"
+    end
+
+    def smaug_executable
+      @smaug_executable ||= @windows ? "smaug.exe" : "smaug"
+    end
+
+    SMAUG_VERSION_FILE = '.smaug-version'.freeze
+
+    def write_version_file
+      $gtk.write_file_root(SMAUG_VERSION_FILE, @state[:release][:version])
+    end
+
+    def get_download_url(assets_json)
+      asset = assets_json.find { |asset_json| asset_of_current_platform?(asset_json) }
+      asset['browser_download_url']
+    end
+
+    def asset_of_current_platform?(asset_json)
+      case $gtk.platform
+      when 'Windows'
+        asset_json['name'].include? 'windows'
+      when 'Mac OS X'
+        asset_json['name'].include? 'mac'
+      else
+        asset_json['name'].include? 'linux'
+      end
     end
   end
 end
