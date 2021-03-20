@@ -249,6 +249,9 @@ module GTK
     attr_reader :packages
 
     def initialize
+      @windows = $gtk.platform == 'Windows'
+      @dr_directory = $gtk.binary_path[0..-12] # remove last 11 characters ("/dragonruby") from binary path
+      @smaug_state = check_smaug
       @request = nil
       @state = :initial
       @ui = UI.new(self)
@@ -287,6 +290,22 @@ module GTK
     def load_packages
       @request = $gtk.http_get 'https://api.smaug.dev/packages'
       @state = :loading_packages
+    end
+
+    def check_smaug
+      return :not_downloaded unless file_exists? smaug_executable_path
+    end
+
+    def file_exists?(file)
+      if @windows
+        `cmd /c if exist #{file} echo 1`.strip == '1'
+      else
+        `[ -e #{file} ] && echo 1`.strip == '1'
+      end
+    end
+
+    def smaug_executable_path
+      @smaug_executable_path ||= @windows ? "#{@dr_directory}/smaug.exe" : "#{@dr_directory}/smaug"
     end
   end
 end
