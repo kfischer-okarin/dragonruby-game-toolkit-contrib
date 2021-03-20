@@ -9,6 +9,7 @@ module GTK
 
       def initialize console
         @console = console
+        @smaug = SmaugClient.new
       end
 
       def record_clicked
@@ -63,6 +64,10 @@ module GTK
         @console.scroll_to_bottom
       end
 
+      def smaug_clicked
+        @smaug.show
+      end
+
       def custom_buttons
         []
       end
@@ -96,6 +101,7 @@ module GTK
 
             (button id: :reset,       row: 2, col: 10, text: "docs",                  method: :docs_clicked),
             (button id: :reset,       row: 2, col:  9, text: "itch wizard",           method: :itch_wizard_clicked),
+            (button id: :smaug,       row: 2, col:  8, text: "smaug",                 method: :smaug_clicked),
             *custom_buttons
           ]
         end
@@ -103,7 +109,11 @@ module GTK
         # render
         args.outputs.reserved << @buttons.map { |b| b[:primitives] }
 
+        @smaug.render(args)
+
         # inputs
+        @smaug.process_input(args)
+
         if args.inputs.mouse.click
           clicked = @buttons.find { |b| args.inputs.mouse.inside_rect? b[:rect] }
           if clicked
