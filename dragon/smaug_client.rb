@@ -252,28 +252,19 @@ module GTK
       @windows = $gtk.platform == 'Windows'
       @dr_directory = $gtk.binary_path[0..-12] # remove last 11 characters ("/dragonruby") from binary path
       @request = nil
-      @state = { name: :check_smaug }
+      @state = { name: :get_latest_smaug_release }
+      @state[:current_version] = `cat .smaug-version`.strip if file_exists? path_to(smaug_executable)
       @ui = UI.new(self)
     end
 
     def show
       @ui.show
-      # load_packages unless @packages
     end
 
     def tick(args)
       return unless @ui.visible?
 
-      puts @state
       send(:"#{@state[:name]}_tick", args)
-    end
-
-    def check_smaug_tick(args)
-      if file_exists?(path_to(smaug_executable))
-        # @state = { name: :check_for_update }
-      else
-        @state = { name: :get_latest_smaug_release, next: :download_smaug }
-      end
     end
 
     def get_latest_smaug_release_tick(args)
@@ -282,10 +273,14 @@ module GTK
 
       if @request[:http_response_code] == 200
         response = $gtk.parse_json @request[:response_data]
-        @state = {
-          name: @state[:next],
-          release: { version: response['tag_name'], url: get_download_url(response['assets']) }
-        }
+        if @state[:current_version] != response['tag_name']
+          @state = {
+            name: :download_smaug,
+            release: { version: response['tag_name'], url: get_download_url(response['assets']) }
+          }
+        else
+          @state = { name: :load_packages }
+        end
       else
         @state = { name: :error, message: 'Error while downloading Smaug' }
       end
@@ -301,7 +296,7 @@ module GTK
         $gtk.write_file_root(smaug_executable, response)
         $gtk.system "chmod u+x #{path_to(smaug_executable)}" unless @windows
         write_version_file
-        @state = { name: :finished }
+        @state = { name: :load_packages }
       elsif @request[:http_response_code] == 302
         @state[:release][:url] = @request[:headers]['location']
       else
@@ -310,37 +305,23 @@ module GTK
       @request = nil
     end
 
-    def finished_tick(args)
-    end
+    def load_packages_tick(args)
+      # TODO: $gtk.parse_json `#{path_to(smaug_executable)} list --json`.strip
+      @request = $gtk.http_get 'https://api.smaug.dev/packages'
+      return unless @request[:complete]
 
-    def render(args)
-      return unless $console.ready?
-
-      @ui.render(args)
-
-      case @state
-      when :loading_packages
-        return unless @request[:complete]
-
-        if @request[:http_response_code] == 200
-          package_jsons = $gtk.parse_json @request[:response_data]
-          @packages = package_jsons.map { |package_json| Package.new(package_json) }
-          @state = :packages_loaded
-        else
-          @state = :error
-        end
+      if @request[:http_response_code] == 200
+        package_jsons = $gtk.parse_json @request[:response_data]
+        @packages = package_jsons.map { |package_json| Package.new(package_json) }
+        @state = { name: :packages_loaded }
+      else
+        @state =  { name: :error, message: 'Error while loading packages' }
       end
     end
 
-    def process_input(args)
-      return unless $console.ready?
-
+    def packages_loaded_tick(args)
+      @ui.render(args)
       @ui.process_input(args)
-    end
-
-    def load_packages
-      @request = $gtk.http_get 'https://api.smaug.dev/packages'
-      @state = :loading_packages
     end
 
     def file_exists?(file)
