@@ -116,12 +116,70 @@ module GTK
       end
     end
 
+    class UI
+      def initialize
+        @window_rect = [300, 100, 680, 520]
+        @close_button_rect = [@window_rect.right - 30, @window_rect.top - 30, 30, 30]
+        @visible = false
+      end
+
+      def visible?
+        @visible
+      end
+
+      def show
+        @visible = true
+      end
+
+      def process_input(args)
+        return unless @visible
+
+        handle_x_button_click(args.inputs)
+
+        args.inputs.mouse.clear if args.inputs.mouse.inside_rect?(@window_rect)
+      end
+
+      def render(args)
+        return unless @visible
+
+        draw_window(args.outputs, @window_rect)
+        draw_x_button(args.outputs, @close_button_rect)
+      end
+
+      def draw_window(gtk_outputs, rect)
+        gtk_outputs.reserved << [rect.x, rect.y, rect.w, rect.h, 255, 255, 255].border
+        gtk_outputs.reserved << [rect.x + 1, rect.y + 1, rect.w - 2, rect.h - 2, 0, 0, 0].solid
+      end
+
+      def draw_x_button(gtk_outputs, rect)
+        gtk_outputs.reserved << [rect.x, rect.y, rect.w, rect.h, 200, 200, 200].solid
+        gtk_outputs.reserved << [rect.x, rect.y, rect.x + rect.w, rect.y + rect.h, 0, 0, 0].line
+        gtk_outputs.reserved << [rect.x + rect.w, rect.y, rect.x, rect.y + rect.h, 0, 0, 0].line
+      end
+
+      def handle_x_button_click(gtk_inputs)
+        return unless gtk_inputs.mouse.click && gtk_inputs.mouse.inside_rect?(@close_button_rect)
+
+        @visible = false
+      end
+    end
+
     def initialize
       @request = nil
       @state = :initial
+      @ui = UI.new
     end
 
-    def tick(args)
+    def show
+      @ui.show
+      load_packages unless @packages
+    end
+
+    def render(args)
+      return unless $console.ready?
+
+      @ui.render(args)
+
       case @state
       when :loading_packages
         return unless @request[:complete]
@@ -134,6 +192,12 @@ module GTK
           @state = :error
         end
       end
+    end
+
+    def process_input(args)
+      return unless $console.ready?
+
+      @ui.process_input(args)
     end
 
     def load_packages
