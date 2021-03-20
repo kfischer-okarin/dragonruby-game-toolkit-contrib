@@ -116,6 +116,8 @@ module GTK
       end
     end
 
+    # $gtk.openurl 'url' to open package page
+
     class UI
       class Table
         attr_rect
