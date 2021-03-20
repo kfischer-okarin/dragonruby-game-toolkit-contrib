@@ -376,8 +376,10 @@ module GTK
         asset_json['name'].include? 'windows'
       when 'Mac OS X'
         asset_json['name'].include? 'mac'
-      else
+      when 'Linux'
         asset_json['name'].include? 'linux'
+      else
+        false
       end
     end
   end
