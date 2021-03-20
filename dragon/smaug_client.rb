@@ -72,8 +72,7 @@ module GTK
       class Table
         attr_rect
 
-        def initialize(client, rect)
-          @client = client
+        def initialize(rect)
           @x, @y, @w, @h = rect
           @letter_height = $gtk.calcstringbox("W")[1]
           @v_padding = 2
@@ -87,10 +86,10 @@ module GTK
         def process_input(args)
         end
 
-        def render(args)
+        def render(args, packages)
           args.outputs.reserved << [@x, @y, @w, @h, 255, 255, 255].border
           draw_table_headers(args.outputs)
-          draw_table_rows(args)
+          draw_table_rows(args, packages)
         end
 
         def draw_table_headers(outputs)
@@ -102,15 +101,15 @@ module GTK
           end
         end
 
-        def draw_table_rows(args)
-          return unless @client.packages
+        def draw_table_rows(args, packages)
+          return unless packages
 
           rows_target = args.outputs[:smaug_table_rows]
           rows_target.width = @w
           rows_target.height = @rows_area_height
           x = 0
           y = @rows_area_height - cell_height
-          @client.packages.each do |package|
+          packages.each do |package|
             @columns.each do |column|
               draw_cell(rows_target, x: x, y: y, w: column[:width], text: package.send(column[:package_method]))
               x += column[:width]
@@ -149,7 +148,7 @@ module GTK
         @window_rect = [300, 100, 680, 520]
         @close_button_rect = [@window_rect.right - 30, @window_rect.top - 30, 25, 25]
         @table_rect = [@window_rect.left + 5, @window_rect.bottom + 45, 300, @window_rect.h - 50 - 30]
-        @table = Table.new(client, @table_rect)
+        @table = Table.new(@table_rect)
         @visible = false
       end
 
@@ -175,7 +174,7 @@ module GTK
 
         draw_window(args.outputs, @window_rect)
         draw_x_button(args.outputs, @close_button_rect)
-        @table.render(args)
+        @table.render(args, @client.packages)
       end
 
       def draw_window(gtk_outputs, rect)
