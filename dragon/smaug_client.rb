@@ -24,7 +24,7 @@ module GTK
           puts "Invalid timestamp #{timestamp}"
         end
 
-        attr_reader :author, :description, :created_at, :version
+        attr_reader :authors, :description, :created_at, :version
 
         def initialize(json)
           @authors = json['authors']
@@ -45,8 +45,8 @@ module GTK
         @versions = json['versions'].map { |version_json| Version.new(version_json) }
       end
 
-      def author
-        latest_version.author
+      def authors
+        latest_version.authors
       end
 
       def description
@@ -78,7 +78,7 @@ module GTK
       class Table
         attr_rect
 
-        attr_reader :x, :y, :w, :h
+        attr_reader :x, :y, :w, :h, :selected_index
 
         def initialize(rect)
           @x, @y, @w, @h = rect
@@ -163,6 +163,50 @@ module GTK
         end
       end
 
+      class DescriptionPanel
+        attr_rect
+
+        def initialize(rect)
+          @x, @y, @w, @h = rect
+          @header_height = UI.get_letter_height(4)
+          @letter_height = UI.get_letter_height
+        end
+
+        def tick(args, package)
+          args.outputs.reserved << [@x, @y, @w, @h, 255, 255, 255].border
+          return unless package
+
+          target = args.outputs[:smaug_description]
+          target.width = @w
+          target.height = @h
+
+          position = [20, @h - 20]
+          render_name_and_version(target, position, package)
+          render_authors(target, position, package)
+          args.outputs.reserved << [@x, @y, @w, @h, :smaug_description].sprite
+        end
+
+        def render_name_and_version(outputs, position, package)
+          outputs.reserved << { x: position.x, y: position.y, text: package.name, r: 255, g: 255, b: 255, size_enum: 4 }.label
+          outputs.reserved << {
+            x: position.x + @w - 40, y: position.y, text: package.latest_version,
+            r: 255, g: 255, b: 255, size_enum: 2, alignment_enum: 2
+          }.label
+
+          position.y -= (@header_height + 10)
+        end
+
+        def render_authors(outputs, position, package)
+          outputs.reserved << { x: position.x, y: position.y, text: 'Authors:', r: 255, g: 255, b: 255 }.label
+          position.y -= (@letter_height + 5)
+
+          package.authors.each do |author|
+            outputs.reserved << { x: position.x, y: position.y, text: author, r: 255, g: 255, b: 255 }.label
+            position.y -= (@letter_height + 5)
+          end
+        end
+      end
+
       attr_rect
 
       attr_reader :x, :y, :w, :h
@@ -172,6 +216,7 @@ module GTK
         @x, @y, @w, @h = [300, 100, 680, 520]
         @close_button_rect = [right - 30, top - 30, 25, 25]
         @table = Table.new([left + 5, bottom + 45, 300, @h - 50 - 30])
+        @description = DescriptionPanel.new([@table.right, @table.bottom, @w - @table.w - 10, @table.h])
         @visible = false
       end
 
@@ -198,7 +243,15 @@ module GTK
         draw_window(args.outputs)
         draw_x_button(args.outputs, @close_button_rect)
         @table.render(args, @client.packages)
+        @description.tick(args, selected_package)
       end
+
+      def tick(args)
+        process_input(args)
+        render(args)
+      end
+
+      private
 
       def draw_window(gtk_outputs)
         gtk_outputs.reserved << [@x, @y, @w, @h, 255, 255, 255].border
@@ -215,6 +268,12 @@ module GTK
         return unless gtk_inputs.mouse.click && gtk_inputs.mouse.inside_rect?(@close_button_rect)
 
         @visible = false
+      end
+
+      def selected_package
+        return nil unless @client.packages && @table.selected_index
+
+        @client.packages[@table.selected_index]
       end
     end
 
@@ -292,8 +351,7 @@ module GTK
     end
 
     def packages_loaded_tick(args)
-      @ui.render(args)
-      @ui.process_input(args)
+      @ui.tick(args)
     end
 
     def file_exists?(file)
