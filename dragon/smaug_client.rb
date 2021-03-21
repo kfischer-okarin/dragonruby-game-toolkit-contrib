@@ -215,7 +215,7 @@ module GTK
         @client = client
         @x, @y, @w, @h = [300, 100, 680, 520]
         @close_button_rect = [right - 30, top - 30, 25, 25]
-        @table = Table.new([left + 5, bottom + 45, 300, @h - 50 - 30])
+        @table = Table.new([left + 5, bottom + 5, 300, @h - 5 - 35])
         @description = DescriptionPanel.new([@table.right, @table.bottom, @w - @table.w - 10, @table.h])
         @visible = false
       end
