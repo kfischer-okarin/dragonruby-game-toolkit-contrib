@@ -66,8 +66,6 @@ module GTK
       end
     end
 
-    # $gtk.openurl 'url' to open package page
-
     class UI
       def self.get_letter_height(size_enum = nil)
         args = ["w"]
@@ -170,9 +168,12 @@ module GTK
           @x, @y, @w, @h = rect
           @header_height = UI.get_letter_height(4)
           @letter_height = UI.get_letter_height
+          @link_rect = [0, 0, 0, 0]
+          @link_text = 'View Package on smaug.dev'
+          @link_width = $gtk.calcstringbox(@link_text)[0]
         end
 
-        def tick(args, package)
+        def render(args, package)
           args.outputs.reserved << [@x, @y, @w, @h, 255, 255, 255].border
           return unless package
 
@@ -184,9 +185,25 @@ module GTK
           render_name_and_version(target, position, package)
           render_authors(target, position, package)
           render_description(target, position, package)
+          render_visit_package_page_link(target, position, package)
+          @link_rect = {
+            x: @x + position.x,
+            y: @y + position.y - @letter_height,
+            w: @link_width,
+            h: @letter_height
+          }
 
           args.outputs.reserved << [@x, @y, @w, @h, :smaug_description].sprite
         end
+
+        def process_input(args, package)
+          return unless package
+
+          mouse = args.inputs.mouse
+          $gtk.openurl "https://smaug.dev/packages/#{package.name}" if mouse.down && mouse.inside_rect?(@link_rect)
+        end
+
+        private
 
         def render_name_and_version(outputs, position, package)
           outputs.reserved << { x: position.x, y: position.y, text: package.name, r: 255, g: 255, b: 255, size_enum: 4 }.label
@@ -217,6 +234,14 @@ module GTK
             outputs.reserved << { x: position.x, y: position.y, text: line, r: 255, g: 255, b: 255 }.label
             position.y -= (@letter_height + 5)
           end
+        end
+
+        def render_visit_package_page_link(outputs, position, package)
+          position.y -= 20
+
+          outputs.reserved << { x: position.x, y: position.y, text: @link_text, r: 150, g: 150, b: 238 }.label
+          underline_y = position.y - @letter_height
+          outputs.reserved << { x: position.x, y: underline_y, x2: position.x + @link_width, y2: underline_y, r: 150, g: 150, b: 238 }.line
         end
 
         def wrapped_lines(string)
@@ -280,6 +305,7 @@ module GTK
 
         handle_x_button_click(args.inputs)
         @table.process_input(args, @client.packages)
+        @description.process_input(args, selected_package)
 
         args.inputs.mouse.clear if args.inputs.mouse.inside_rect? self
       end
@@ -290,12 +316,12 @@ module GTK
         draw_window(args.outputs)
         draw_x_button(args.outputs, @close_button_rect)
         @table.render(args, @client.packages)
-        @description.tick(args, selected_package)
+        @description.render(args, selected_package)
       end
 
       def tick(args)
-        process_input(args)
         render(args)
+        process_input(args)
       end
 
       private
