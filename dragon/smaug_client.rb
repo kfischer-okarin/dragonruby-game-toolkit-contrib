@@ -183,6 +183,8 @@ module GTK
           position = [20, @h - 20]
           render_name_and_version(target, position, package)
           render_authors(target, position, package)
+          render_description(target, position, package)
+
           args.outputs.reserved << [@x, @y, @w, @h, :smaug_description].sprite
         end
 
@@ -201,9 +203,54 @@ module GTK
           position.y -= (@letter_height + 5)
 
           package.authors.each do |author|
-            outputs.reserved << { x: position.x, y: position.y, text: author, r: 255, g: 255, b: 255 }.label
+            wrapped_lines(author).each do |line|
+              outputs.reserved << { x: position.x, y: position.y, text: line, r: 255, g: 255, b: 255 }.label
+              position.y -= (@letter_height + 5)
+            end
+          end
+        end
+
+        def render_description(outputs, position, package)
+          position.y -= 20
+
+          wrapped_lines(package.description).each do |line|
+            outputs.reserved << { x: position.x, y: position.y, text: line, r: 255, g: 255, b: 255 }.label
             position.y -= (@letter_height + 5)
           end
+        end
+
+        def wrapped_lines(string)
+          max_length = @w - 40
+          length = $gtk.calcstringbox(string)[0]
+          return [string] if length <= max_length
+
+          [].tap { |result|
+            start_index = 0
+            line_end_index = -1
+            search_start_index = 1
+            loop do
+              end_of_next_word_index = string.index(' ', search_start_index)
+              end_of_next_word_index ||= string.size
+              end_of_next_word_index -= 1
+
+              if $gtk.calcstringbox(string[start_index..end_of_next_word_index])[0] > max_length
+                result << string[start_index..line_end_index]
+                break if line_end_index == -1
+
+                start_index = line_end_index + 1
+                start_index += 1 while string[start_index] == ' '
+              else
+                line_end_index = end_of_next_word_index
+                if line_end_index == string.size - 1
+                  result << string[start_index..line_end_index]
+                  break
+                end
+
+                search_start_index = end_of_next_word_index + 1
+                search_start_index += 1 while string[search_start_index] == ' '
+              end
+            end
+          }
         end
       end
 
