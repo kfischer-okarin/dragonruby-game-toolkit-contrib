@@ -58,11 +58,11 @@ module GTK
       end
 
       def latest_version
-        @latest_version ||= @versions.max_by { |version| version.version }
+        @latest_version ||= @versions.sort_by(&:version).last
       end
 
       def inspect
-        "Package '#{@name}' (latest version #{latest_version}, last updated: #{last_updated})"
+        "#{@name} v#{latest_version}"
       end
     end
 
@@ -411,7 +411,7 @@ module GTK
 
     def load_packages_tick(args)
       # TODO: $gtk.parse_json `#{path_to(smaug_executable)} list --json`.strip
-      @request = $gtk.http_get 'https://api.smaug.dev/packages'
+      @request ||= $gtk.http_get 'https://api.smaug.dev/packages'
       return unless @request[:complete]
 
       if @request[:http_response_code] == 200
