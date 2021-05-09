@@ -257,6 +257,7 @@ module GTK
               end_of_next_word_index = string.index(' ', search_start_index)
               end_of_next_word_index ||= string.size
               end_of_next_word_index -= 1
+              line_end_index = end_of_next_word_index if line_end_index <= start_index
 
               if $gtk.calcstringbox(string[start_index..end_of_next_word_index])[0] > max_length
                 result << string[start_index..line_end_index]
