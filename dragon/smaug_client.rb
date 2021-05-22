@@ -230,7 +230,7 @@ module GTK
         def render_description(outputs, position, package)
           position.y -= 20
 
-          wrapped_lines(package.description).each do |line|
+          wrapped_lines(package.description || '').each do |line|
             outputs.reserved << { x: position.x, y: position.y, text: line, r: 255, g: 255, b: 255 }.label
             position.y -= (@letter_height + 5)
           end
