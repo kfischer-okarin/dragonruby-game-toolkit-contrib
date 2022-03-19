@@ -61,6 +61,7 @@ module GTK
           <li><a href="/dragon/log/">Logs</a></li>
           <li><a href="/dragon/puts/">Puts</a></li>
           <li><a href="/dragon/code/">Code</a></li>
+          <li><a href="/dragon/docs_editor">Contribute to the Documentation</a></li>
         </ul>
       HTML
     end
@@ -265,6 +266,40 @@ module GTK
       get_api_control_panel args, req
     end
 
+    def get_api_docs_editor_menu args, req
+      respond_with_html req, <<~HTML, title: 'Docs Editor'
+        <a href="/dragon/docs_editor/new">Add new documentation section</a>
+        #{documentation_links}
+      HTML
+    end
+
+    def documentation_links
+      links = ''
+      documented_classes.each do |klass|
+        links << <<~HTML
+          <li><a href="/dragon/docs_editor?method=#{klass}.doc_class">#{klass}</a></li>
+        HTML
+        links << '<ul>'
+        doc_methods = (DocsOrganizer.find_methods_with_docs(klass) - [:docs_class]).sort
+        doc_methods.each do |doc_method|
+          method = doc_method.to_s[5..]
+          links << <<~HTML
+            <li><a href='/dragon/docs_editor?method=#{klass}.#{doc_method}'>#{method}</a></li>
+          HTML
+        end
+        links << '</ul>'
+      end
+      <<~HTML
+        <ul>
+          #{links}
+        </ul>
+      HTML
+    end
+
+    def documented_classes
+      ($docs_classes).sort { |l, r| l.inspect <=> r.inspect }
+    end
+
     def tick args
       args.inputs.http_requests.each do |req|
         uri, query_string = get_uri_and_query_string req
@@ -359,6 +394,8 @@ module GTK
          handler:        :get_api_autocomplete },
        { match_criteria: { method: :post, uri: "/dragon/autocomplete/" },
          handler:        :post_api_autocomplete },
+       { match_criteria: { method: :get, uri: '/dragon/docs_editor/' },
+         handler:        :get_api_docs_editor_menu },
        { match_criteria: { method: :get, uri: "/dragon/code/edit/", has_query_string: true },
          handler:        :get_api_code_edit },
        { match_criteria: { method: :post, uri: "/dragon/code/update/", has_query_string: true },
