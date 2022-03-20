@@ -273,6 +273,57 @@ module GTK
       HTML
     end
 
+    def get_api_docs_editor args, req
+      query_params = get_query_params req
+      doc_method = query_params['method']
+      doc_text = get_doc_text doc_method
+      rendered_doc_text = render_doc_text doc_text
+
+      respond_with_html req, <<~HTML, title: 'Docs Editor'
+        <script>
+          async function submitForm() {
+            const result = await fetch("#{req.uri}", {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ doc: document.getElementById("doc").value }),
+            });
+            document.getElementById("eval-result").innerHTML = await result.text();
+          }
+        </script>
+        <form>
+          <div><code>#{query_params['method']}:</code></div>
+          <textarea name="doc" id="doc" rows="30" cols="80">#{doc_text}</textarea>
+          <br/>
+          <input type="button" value="Update" onclick="submitForm();" />
+          <span id="success-notification"></span>
+        </form>
+
+        <b>Preview:</b>
+        <div class="docs">
+          #{rendered_doc_text}
+        </div>
+
+        #{documentation_links}
+
+        #{links}
+      HTML
+    end
+
+    def get_doc_text doc_method
+      class_name, method_name = doc_method.split('.')
+      klass = Object.const_get(class_name)
+      klass.send(method_name)
+    end
+
+    def render_doc_text doc_text
+      true_lines = GTK::Runtime.parse_true_lines doc_text, []
+      result = ''
+      true_lines.each do |line|
+        result << GTK::Runtime.__docs_line_to_html__(line, [])
+      end
+      result.tap{ |r| p r }
+    end
+
     def documentation_links
       links = ''
       documented_classes.each do |klass|
@@ -394,6 +445,8 @@ module GTK
          handler:        :get_api_autocomplete },
        { match_criteria: { method: :post, uri: "/dragon/autocomplete/" },
          handler:        :post_api_autocomplete },
+       { match_criteria: { method: :get, uri: '/dragon/docs_editor/', has_query_string: true },
+         handler:        :get_api_docs_editor },
        { match_criteria: { method: :get, uri: '/dragon/docs_editor/' },
          handler:        :get_api_docs_editor_menu },
        { match_criteria: { method: :get, uri: "/dragon/code/edit/", has_query_string: true },
