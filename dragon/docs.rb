@@ -252,25 +252,27 @@ S
   def __docs_to_html__ string
     parse_log = []
 
-    html_start_to_toc_start = <<-S
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>DragonRuby Game Toolkit Documentation</title>
-    <link href="docs.css?ver=#{Time.now.to_i}" rel="stylesheet" type="text/css" media="all">
-  </head>
-  <body>
-    <div id='table-of-contents'>
-S
-    html_toc_end_to_content_start = <<-S
-    </div>
-    <div id='content'>
-S
-    html_content_end_to_html_end = <<-S
-    </div>
-  </body>
-</html>
-S
+    html_start_to_toc_start = <<~HTML
+      <html lang="en">
+        <head>
+          <meta charset="utf-8">
+          <title>DragonRuby Game Toolkit Documentation</title>
+          <link href="docs.css?ver=#{Time.now.to_i}" rel="stylesheet" type="text/css" media="all">
+        </head>
+        <body>
+          <div class='docs'>
+            <div id='table-of-contents'>
+    HTML
+    html_toc_end_to_content_start = <<~HTML
+      </div>
+      <div id='content'>
+    HTML
+    html_content_end_to_html_end = <<~HTML
+            </div>
+          </div>
+        </body>
+      </html>
+    HTML
 
     true_lines = []
     current_true_line = ""
