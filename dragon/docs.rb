@@ -274,92 +274,7 @@ S
       </html>
     HTML
 
-    true_lines = []
-    current_true_line = ""
-
-    inside_source = false
-    inside_ordered_list = false
-    inside_unordered_list = false
-
-    # PARSE TRUE LINES
-    parse_log << "* Processing True Lines"
-    string.strip.each_line do |l|
-      parse_log << "** Processing line: ~#{l.rstrip}~"
-      if l.start_with? "#+begin_src"
-        parse_log << "- Line was identified as the beginning of a code block."
-        inside_source = true
-        __docs_append_true_line__ true_lines, current_true_line, parse_log
-        __docs_append_true_line__ true_lines, l, parse_log
-      elsif l.start_with? "#+end_src"
-        parse_log << "- Line was identified as the end of a code block."
-        inside_source = false
-        __docs_append_true_line__ true_lines, l, parse_log
-        current_true_line = ""
-      elsif l.start_with? "#+"
-        parse_log << "- Line was identified as a literal block."
-        __docs_append_true_line__ true_lines, current_true_line, parse_log
-        __docs_append_true_line__ true_lines, l, parse_log
-        current_true_line = ""
-      elsif l.start_with? "- "
-        parse_log << "- Line was identified as a list."
-        inside_unordered_list = true
-        __docs_append_true_line__ true_lines, current_true_line, parse_log
-        current_true_line = l
-      elsif l.start_with? "1. "
-        parse_log << "- Line was identified as a start of a list."
-        inside_ordered_list = true
-        __docs_append_true_line__ true_lines, current_true_line, parse_log
-        current_true_line = l
-      elsif inside_ordered_list && (l[1] == "." || l[2] == "." || l[3] == ".")
-        parse_log << "- Line was identified as a continuation of a list."
-        __docs_append_true_line__ true_lines, current_true_line, parse_log
-        current_true_line = l
-      elsif inside_source
-        parse_log << "- Inside source: true"
-        inside_source = true
-        __docs_append_true_line__ true_lines, l, parse_log
-        current_true_line = ""
-      elsif l.strip.length == 0
-        parse_log << "- End of paragraph detected."
-        inside_ordered_list = false
-        inside_unordered_list = false
-        __docs_append_true_line__ true_lines, current_true_line, parse_log
-        current_true_line = ""
-      elsif l.start_with? "* "
-        parse_log << "- Header detected."
-        __docs_append_true_line__ true_lines, current_true_line, parse_log
-        __docs_append_true_line__ true_lines, l, parse_log
-        current_true_line = ""
-      elsif l.start_with? "** "
-        parse_log << "- Header detected."
-        __docs_append_true_line__ true_lines, current_true_line, parse_log
-        __docs_append_true_line__ true_lines, l, parse_log
-        current_true_line = ""
-      elsif l.start_with? "*** "
-        parse_log << "- Header detected."
-        __docs_append_true_line__ true_lines, current_true_line, parse_log
-        __docs_append_true_line__ true_lines, l, parse_log
-        current_true_line = ""
-      elsif l.start_with? "**** "
-        parse_log << "- Header detected."
-        __docs_append_true_line__ true_lines, current_true_line, parse_log
-        __docs_append_true_line__ true_lines, l, parse_log
-        current_true_line = ""
-      elsif l.start_with? "***** "
-        parse_log << "- Header detected."
-        __docs_append_true_line__ true_lines, current_true_line, parse_log
-        __docs_append_true_line__ true_lines, l, parse_log
-        current_true_line = ""
-      else
-        current_true_line += l.rstrip + " "
-      end
-    end
-
-    true_lines << current_true_line if current_true_line.length != 0
-
-    if true_lines[0].strip == ""
-      true_lines = true_lines[1..-1]
-    end
+    true_lines = parse_true_lines(string, parse_log)
 
     toc_html = ""
     content_html = ""
@@ -563,6 +478,97 @@ S
   rescue Exception => e
     $gtk.write_file_root 'docs/parse_log.txt', (parse_log.join "\n")
     raise "* ERROR in Docs::__docs_to_html__. #{e}"
+  end
+
+  def parse_true_lines(string, parse_log)
+    true_lines = []
+    current_true_line = ""
+
+    inside_source = false
+    inside_ordered_list = false
+    inside_unordered_list = false
+
+
+    parse_log << "* Processing True Lines"
+    string.strip.each_line do |l|
+      parse_log << "** Processing line: ~#{l.rstrip}~"
+      if l.start_with? "#+begin_src"
+        parse_log << "- Line was identified as the beginning of a code block."
+        inside_source = true
+        __docs_append_true_line__ true_lines, current_true_line, parse_log
+        __docs_append_true_line__ true_lines, l, parse_log
+      elsif l.start_with? "#+end_src"
+        parse_log << "- Line was identified as the end of a code block."
+        inside_source = false
+        __docs_append_true_line__ true_lines, l, parse_log
+        current_true_line = ""
+      elsif l.start_with? "#+"
+        parse_log << "- Line was identified as a literal block."
+        __docs_append_true_line__ true_lines, current_true_line, parse_log
+        __docs_append_true_line__ true_lines, l, parse_log
+        current_true_line = ""
+      elsif l.start_with? "- "
+        parse_log << "- Line was identified as a list."
+        inside_unordered_list = true
+        __docs_append_true_line__ true_lines, current_true_line, parse_log
+        current_true_line = l
+      elsif l.start_with? "1. "
+        parse_log << "- Line was identified as a start of a list."
+        inside_ordered_list = true
+        __docs_append_true_line__ true_lines, current_true_line, parse_log
+        current_true_line = l
+      elsif inside_ordered_list && (l[1] == "." || l[2] == "." || l[3] == ".")
+        parse_log << "- Line was identified as a continuation of a list."
+        __docs_append_true_line__ true_lines, current_true_line, parse_log
+        current_true_line = l
+      elsif inside_source
+        parse_log << "- Inside source: true"
+        inside_source = true
+        __docs_append_true_line__ true_lines, l, parse_log
+        current_true_line = ""
+      elsif l.strip.length == 0
+        parse_log << "- End of paragraph detected."
+        inside_ordered_list = false
+        inside_unordered_list = false
+        __docs_append_true_line__ true_lines, current_true_line, parse_log
+        current_true_line = ""
+      elsif l.start_with? "* "
+        parse_log << "- Header detected."
+        __docs_append_true_line__ true_lines, current_true_line, parse_log
+        __docs_append_true_line__ true_lines, l, parse_log
+        current_true_line = ""
+      elsif l.start_with? "** "
+        parse_log << "- Header detected."
+        __docs_append_true_line__ true_lines, current_true_line, parse_log
+        __docs_append_true_line__ true_lines, l, parse_log
+        current_true_line = ""
+      elsif l.start_with? "*** "
+        parse_log << "- Header detected."
+        __docs_append_true_line__ true_lines, current_true_line, parse_log
+        __docs_append_true_line__ true_lines, l, parse_log
+        current_true_line = ""
+      elsif l.start_with? "**** "
+        parse_log << "- Header detected."
+        __docs_append_true_line__ true_lines, current_true_line, parse_log
+        __docs_append_true_line__ true_lines, l, parse_log
+        current_true_line = ""
+      elsif l.start_with? "***** "
+        parse_log << "- Header detected."
+        __docs_append_true_line__ true_lines, current_true_line, parse_log
+        __docs_append_true_line__ true_lines, l, parse_log
+        current_true_line = ""
+      else
+        current_true_line += l.rstrip + " "
+      end
+    end
+
+    true_lines << current_true_line if current_true_line.length != 0
+
+    if true_lines[0].strip == ""
+      true_lines = true_lines[1..-1]
+    end
+
+    true_lines
   end
 
   def __docs_line_to_html__ line, parse_log
