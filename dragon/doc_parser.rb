@@ -1,21 +1,20 @@
 module GTK
   class DocParser
     def parse(doc_string)
-      chars = doc_string.chars
+      tokens = Tokenizer.new(doc_string).tokens
       index = 0
       elements = []
       h1 = nil
       code = nil
       text = ''
 
-      while index < chars.length
-        char = chars[index]
+      while index < tokens.length
+        token = tokens[index]
 
-        case char
-        when '*'
+        case token
+        when :h1
           h1 = { type: :h1, children: [] }
-          index += 1
-        when '~'
+        when :tilde
           if code
             code[:children] << text
             text = ''
@@ -29,19 +28,20 @@ module GTK
             end
             code = { type: :code, children: [] }
           end
-        when "\n"
+        when :newline
           if h1
             h1[:children] << text if text.length > 0
             elements << h1
             h1 = nil
+          else
+            elements << text if text.length > 0
           end
         else
-          text << char
+          text = token
         end
 
         index += 1
       end
-      elements << text if text.length > 0
       elements
     end
 
