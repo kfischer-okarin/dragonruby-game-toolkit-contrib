@@ -66,13 +66,19 @@ module GTK
       end
 
       def parse_token(token)
+        last_element = @elements.last
+
         case token
         when :h1
           element = { type: :h1, children: [] }
           @elements << element
           HeaderMode.new(element[:children], parent_mode: self)
         when String
-          @elements << token
+          if last_element.is_a?(String)
+            @elements[-1] = "#{last_element} #{token}"
+          else
+            @elements << token
+          end
           self
         else
           self

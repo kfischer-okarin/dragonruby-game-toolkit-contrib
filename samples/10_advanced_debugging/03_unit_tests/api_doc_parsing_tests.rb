@@ -36,3 +36,15 @@ def test_doc_parse_header_code_text(args, assert)
     'Audio docs'
   ]
 end
+
+def test_doc_parse_multiline_text(args, assert)
+  elements = GTK::ApiDocExport.parse_doc_entry <<~S
+    Line 1
+    Line 2
+    Line 3
+  S
+
+  assert.equal! elements, [
+    'Line 1 Line 2 Line 3',
+  ]
+end
