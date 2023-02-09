@@ -1,4 +1,4 @@
-def test_doc_parse_tokenize(args, assert)
+def test_doc_parse_tokenize(_args, assert)
   tokens = GTK::DocParser::Tokenizer.new(<<~S).tokens
     * DOCS: ~GTK::Args#audio~
 
@@ -18,7 +18,7 @@ def test_doc_parse_tokenize(args, assert)
   ]
 end
 
-def test_doc_parse_header_code_text(args, assert)
+def test_doc_parse_header_code_text(_args, assert)
   elements = GTK::ApiDocExport.parse_doc_entry <<~S
     * DOCS: ~GTK::Args#audio~
 
@@ -37,7 +37,7 @@ def test_doc_parse_header_code_text(args, assert)
   ]
 end
 
-def test_doc_parse_multiline_text(args, assert)
+def test_doc_parse_multiline_text(_args, assert)
   elements = GTK::ApiDocExport.parse_doc_entry <<~S
     Line 1
     Line 2
@@ -45,6 +45,6 @@ def test_doc_parse_multiline_text(args, assert)
   S
 
   assert.equal! elements, [
-    'Line 1 Line 2 Line 3',
+    'Line 1 Line 2 Line 3'
   ]
 end
