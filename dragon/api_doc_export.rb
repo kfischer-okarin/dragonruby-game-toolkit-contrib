@@ -12,6 +12,7 @@ module GTK
             entry_name: entry_name(klass, method_name),
             raw_text: klass.send(doc_method)
           }
+          entry[:parsed_text] = parse_doc_entry(entry[:raw_text])
           puts "Exporting docs for #{entry[:entry_name]}"
           entries << entry
         end
@@ -19,6 +20,50 @@ module GTK
         json = build_json(entries)
         $gtk.write_file_root 'docs/api_docs.json', json
         build_html(json)
+      end
+
+      def parse_doc_entry(raw_text)
+        chars = raw_text.chars
+        index = 0
+        elements = []
+        h1 = nil
+        code = nil
+        text = ''
+        while index < chars.length
+          char = chars[index]
+
+          case char
+          when '*'
+            h1 = { type: :h1, children: [] }
+            index += 1
+          when '~'
+            if code
+              code[:children] << text
+              text = ''
+              if h1
+                h1[:children] << code
+              end
+            else
+              if h1
+                h1[:children] << text
+                text = ''
+              end
+              code = { type: :code, children: [] }
+            end
+          when "\n"
+            if h1
+              h1[:children] << text if text.length > 0
+              elements << h1
+              h1 = nil
+            end
+          else
+            text << char
+          end
+
+          index += 1
+        end
+        elements << text if text.length > 0
+        elements
       end
 
       private
