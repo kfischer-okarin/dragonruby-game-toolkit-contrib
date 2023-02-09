@@ -1,48 +1,18 @@
 module GTK
   class DocParser
+    def initialize
+      @elements = []
+      @mode = RootMode.new(@elements)
+    end
+
     def parse(doc_string)
       tokens = Tokenizer.new(doc_string).tokens
-      index = 0
-      elements = []
-      h1 = nil
-      code = nil
-      text = ''
 
-      while index < tokens.length
-        token = tokens[index]
-
-        case token
-        when :h1
-          h1 = { type: :h1, children: [] }
-        when :tilde
-          if code
-            code[:children] << text
-            text = ''
-            if h1
-              h1[:children] << code
-            end
-          else
-            if h1
-              h1[:children] << text
-              text = ''
-            end
-            code = { type: :code, children: [] }
-          end
-        when :newline
-          if h1
-            h1[:children] << text if text.length > 0
-            elements << h1
-            h1 = nil
-          else
-            elements << text if text.length > 0
-          end
-        else
-          text = token
-        end
-
-        index += 1
+      tokens.each do |token|
+        @mode = @mode.parse_token token
       end
-      elements
+
+      @elements
     end
 
     private
@@ -87,6 +57,64 @@ module GTK
 
         @tokens << @current_text
         @current_text = ''
+      end
+    end
+
+    class RootMode
+      def initialize(elements)
+        @elements = elements
+      end
+
+      def parse_token(token)
+        case token
+        when :h1
+          element = { type: :h1, children: [] }
+          @elements << element
+          HeaderMode.new(element[:children], parent_mode: self)
+        when String
+          @elements << token
+          self
+        else
+          self
+        end
+      end
+    end
+
+    class HeaderMode
+      def initialize(elements, parent_mode:)
+        @elements = elements
+        @parent_mode = parent_mode
+      end
+
+      def parse_token(token)
+        case token
+        when :tilde
+          element = { type: :code, children: [] }
+          @elements << element
+          CodeMode.new(element[:children], parent_mode: self)
+        when String
+          @elements << token
+          self
+        when :newline
+          @parent_mode
+        end
+      end
+    end
+
+    class CodeMode
+      def initialize(elements, parent_mode:)
+        @elements = elements
+        @parent_mode = parent_mode
+      end
+
+      def parse_token(token)
+        case token
+        when String
+          @elements << token
+          self
+        when :tilde
+          @parent_mode
+        end
       end
     end
   end

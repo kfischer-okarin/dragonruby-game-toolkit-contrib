@@ -18,7 +18,7 @@ def test_doc_parse_tokenize(args, assert)
   ]
 end
 
-def test_parse_header_code_text(args, assert)
+def test_doc_parse_header_code_text(args, assert)
   elements = GTK::ApiDocExport.parse_doc_entry <<~S
     * DOCS: ~GTK::Args#audio~
 
