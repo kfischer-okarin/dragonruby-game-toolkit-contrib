@@ -30,14 +30,14 @@ module GTK
       end
 
       def tokenize
-        while @index < @chars.length
-          char = @chars[@index]
+        until end_of_string?
+          char = current_char
 
           case char
           when '*'
             finish_text
             @tokens << :h1
-            @index += 1
+            move_index 1
           when '~'
             finish_text
             @tokens << :tilde
@@ -48,8 +48,22 @@ module GTK
             @current_text << char
           end
 
-          @index += 1
+          move_index 1
         end
+      end
+
+      private
+
+      def end_of_string?
+        @index >= @chars.length
+      end
+
+      def current_char
+        @chars[@index]
+      end
+
+      def move_index(count)
+        @index += count
       end
 
       def finish_text
