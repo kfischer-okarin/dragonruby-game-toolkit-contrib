@@ -21,8 +21,9 @@ module GTK
       attr_reader :tokens
 
       def initialize(doc_string)
-        @chars = doc_string.chars
-        @index = 0
+        @lines = doc_string.lines
+        @line_no = 0
+        @column = 0
         @tokens = []
         @current_text = ''
 
@@ -55,15 +56,25 @@ module GTK
       private
 
       def end_of_string?
-        @index >= @chars.length
+        @line_no == @lines.length - 1 && @column == @lines.last.length
       end
 
       def current_char
-        @chars[@index]
+        @lines[@line_no][@column]
       end
 
       def move_index(count)
-        @index += count
+        @column += count
+
+        while @column >= @lines[@line_no].length
+          if @line_no == @lines.length - 1
+            @column = @lines.last.length
+            break
+          end
+
+          @line_no += 1
+          @column = 0
+        end
       end
 
       def finish_text
