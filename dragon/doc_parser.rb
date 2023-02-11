@@ -21,9 +21,7 @@ module GTK
       attr_reader :tokens
 
       def initialize(doc_string)
-        @lines = doc_string.lines
-        @line_no = 0
-        @column = 0
+        @text_position = TextPosition.new(doc_string)
         @tokens = []
         @current_text = ''
 
@@ -31,14 +29,14 @@ module GTK
       end
 
       def tokenize
-        until end_of_string?
-          char = current_char
+        until @text_position.end_of_string?
+          char = @text_position.current_char
 
           case char
           when '*'
             finish_text
             @tokens << :h1
-            move_index 1
+            @text_position.move_by 1
           when '~'
             finish_text
             @tokens << :tilde
@@ -49,39 +47,79 @@ module GTK
             @current_text << char
           end
 
-          move_index 1
+          @text_position.move_by 1
         end
       end
 
       private
-
-      def end_of_string?
-        @line_no == @lines.length - 1 && @column == @lines.last.length
-      end
-
-      def current_char
-        @lines[@line_no][@column]
-      end
-
-      def move_index(count)
-        @column += count
-
-        while @column >= @lines[@line_no].length
-          if @line_no == @lines.length - 1
-            @column = @lines.last.length
-            break
-          end
-
-          @line_no += 1
-          @column = 0
-        end
-      end
 
       def finish_text
         return if @current_text.empty?
 
         @tokens << @current_text
         @current_text = ''
+      end
+    end
+
+    class TextPosition
+      attr_reader :line_no, :column
+
+      def initialize(string)
+        @lines = string.lines
+        @line_no = 0
+        @column = 0
+      end
+
+      def current_line
+        @lines[@line_no]
+      end
+
+      def current_char
+        current_line[@column]
+      end
+
+      def beginning_of_line?
+        @column.zero?
+      end
+
+      def end_of_line?
+        @column == current_line.length - 1
+      end
+
+      def end_of_string?
+        @line_no == @lines.length - 1 && @column == @lines.last.length
+      end
+
+      def move_by(count)
+        @column += count
+        handle_move_to_next_line
+        handle_move_to_previous_line
+      end
+
+      private
+
+      def handle_move_to_next_line
+        while @column >= current_line.length
+          if @line_no == @lines.length - 1
+            @column = current_line.length
+            return
+          end
+
+          @column -= current_line.length
+          @line_no += 1
+        end
+      end
+
+      def handle_move_to_previous_line
+        while @column.negative?
+          if @line_no.zero?
+            @column = 0
+            return
+          end
+
+          @line_no -= 1
+          @column += current_line.length
+        end
       end
     end
 
