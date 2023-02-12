@@ -96,6 +96,10 @@ module GTK
         @index == @string.length
       end
 
+      def move_to_beginning_of_next_line
+        move_by current_line.length - @column
+      end
+
       def move_by(count)
         @index += count
         @column += count
