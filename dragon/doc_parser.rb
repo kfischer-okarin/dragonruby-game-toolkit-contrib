@@ -32,15 +32,14 @@ module GTK
         until @text_position.end_of_string?
           char = @text_position.current_char
 
-          case char
-          when '*'
+          if @text_position.beginning_of_line? && @text_position.current_string(2) == '* '
             finish_text
             @tokens << :h1
             @text_position.move_by 1
-          when '~'
+          elsif char == '~'
             finish_text
             @tokens << :tilde
-          when "\n"
+          elsif char == "\n"
             finish_text
             @tokens << :newline
           else
