@@ -35,18 +35,19 @@ module GTK
           if @text_position.beginning_of_line? && @text_position.current_string(2) == '* '
             finish_text
             @tokens << :h1
-            @text_position.move_by 1
+            @text_position.move_by 2
           elsif char == '~'
             finish_text
             @tokens << :tilde
+            @text_position.move_by 1
           elsif char == "\n"
             finish_text
             @tokens << :newline
+            @text_position.move_by 1
           else
             @current_text << char
+            @text_position.move_by 1
           end
-
-          @text_position.move_by 1
         end
       end
 
