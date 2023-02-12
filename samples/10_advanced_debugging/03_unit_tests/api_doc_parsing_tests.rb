@@ -94,6 +94,12 @@ def test_doc_parse_tokenize(_args, assert)
     * DOCS: ~GTK::Args#audio~
 
     Audio docs
+
+    #+begin_src
+      def tick(args)
+        args.outputs.labels << [100, 100, 'abc']
+      end
+    #+end_src
   S
 
   assert.equal! tokens, [
@@ -105,7 +111,16 @@ def test_doc_parse_tokenize(_args, assert)
     :newline,
     :newline,
     'Audio docs',
-    :newline
+    :newline,
+    :newline,
+    :code_block_start,
+    'def tick(args)',
+    :newline,
+    '  args.outputs.labels << [100, 100, \'abc\']',
+    :newline,
+    'end',
+    :newline,
+    :code_block_end
   ]
 end
 

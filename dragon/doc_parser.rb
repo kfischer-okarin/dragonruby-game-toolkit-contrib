@@ -24,6 +24,7 @@ module GTK
         @text_position = TextPosition.new(doc_string)
         @tokens = []
         @current_text = ''
+        @indent = 0
 
         tokenize
       end
@@ -36,6 +37,16 @@ module GTK
             finish_text
             @tokens << :h1
             @text_position.move_by 2
+          elsif @text_position.beginning_of_line? && @text_position.current_string(11) == '#+begin_src'
+            finish_text
+            @tokens << :code_block_start
+            @text_position.move_to_beginning_of_next_line
+            @indent = calc_indent @text_position.current_line
+          elsif @text_position.beginning_of_line? && @text_position.current_string(9) == '#+end_src'
+            finish_text
+            @tokens << :code_block_end
+            @text_position.move_to_beginning_of_next_line
+            @indent = 0
           elsif char == '~'
             finish_text
             @tokens << :tilde
@@ -56,8 +67,18 @@ module GTK
       def finish_text
         return if @current_text.empty?
 
-        @tokens << @current_text
+        @tokens << @current_text[@indent..-1]
         @current_text = ''
+      end
+
+      def calc_indent(line)
+        result = 0
+        line.each_char do |char|
+          break unless char == ' '
+
+          result += 1
+        end
+        result
       end
     end
 
