@@ -62,6 +62,19 @@ def test_text_position_movement(_args, assert)
   assert.equal! position.column, 0
 end
 
+def test_text_position_current_string(_args, assert)
+  position = GTK::DocParser::TextPosition.new(<<~S)
+    Line 1
+    Line 2
+  S
+
+  assert.equal! position.current_string(3), 'Lin'
+
+  position.move_by 3
+
+  assert.equal! position.current_string(8), "e 1\nLine"
+end
+
 def test_doc_parse_tokenize(_args, assert)
   tokens = GTK::DocParser::Tokenizer.new(<<~S).tokens
     * DOCS: ~GTK::Args#audio~

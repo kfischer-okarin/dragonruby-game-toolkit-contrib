@@ -65,6 +65,8 @@ module GTK
       attr_reader :line_no, :column
 
       def initialize(string)
+        @string = string
+        @index = 0
         @lines = string.lines
         @line_no = 0
         @column = 0
@@ -78,6 +80,10 @@ module GTK
         current_line[@column]
       end
 
+      def current_string(count)
+        @string[@index, count]
+      end
+
       def beginning_of_line?
         @column.zero?
       end
@@ -87,10 +93,11 @@ module GTK
       end
 
       def end_of_string?
-        @line_no == @lines.length - 1 && @column == @lines.last.length
+        @index == @string.length
       end
 
       def move_by(count)
+        @index += count
         @column += count
         handle_move_to_next_line
         handle_move_to_previous_line
@@ -101,6 +108,7 @@ module GTK
       def handle_move_to_next_line
         while @column >= current_line.length
           if @line_no == @lines.length - 1
+            @index = @string.length
             @column = current_line.length
             return
           end
@@ -113,6 +121,7 @@ module GTK
       def handle_move_to_previous_line
         while @column.negative?
           if @line_no.zero?
+            @index = 0
             @column = 0
             return
           end
