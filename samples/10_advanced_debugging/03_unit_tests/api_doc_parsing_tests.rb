@@ -154,3 +154,24 @@ def test_doc_parse_multiline_text(_args, assert)
     'Line 1 Line 2 Line 3'
   ]
 end
+
+def test_doc_parse_code_block(_args, assert)
+  elements = GTK::ApiDocExport.parse_doc_entry <<~S
+    #+begin_src
+      def tick(args)
+        args.outputs.labels << [100, 100, 'abc']
+      end
+    #+end_src
+  S
+
+  assert.equal! elements, [
+    {
+      type: :code_block,
+      children: [
+        'def tick(args)',
+        '  args.outputs.labels << [100, 100, \'abc\']',
+        'end'
+      ]
+    }
+  ]
+end

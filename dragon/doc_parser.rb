@@ -170,6 +170,10 @@ module GTK
           element = { type: :h1, children: [] }
           @elements << element
           HeaderMode.new(element[:children], parent_mode: self)
+        when :code_block_start
+          element = { type: :code_block, children: [] }
+          @elements << element
+          CodeBlockMode.new(element[:children], parent_mode: self)
         when String
           if last_element.is_a?(String)
             @elements[-1] = "#{last_element} #{token}"
@@ -200,6 +204,25 @@ module GTK
           self
         when :newline
           @parent_mode
+        end
+      end
+    end
+
+    class CodeBlockMode
+      def initialize(elements, parent_mode:)
+        @elements = elements
+        @parent_mode = parent_mode
+      end
+
+      def parse_token(token)
+        case token
+        when :code_block_end
+          @parent_mode
+        when String
+          @elements << token
+          self
+        when :newline
+          self
         end
       end
     end
