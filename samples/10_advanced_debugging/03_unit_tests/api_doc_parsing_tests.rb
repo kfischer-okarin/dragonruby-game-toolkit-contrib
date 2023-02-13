@@ -89,17 +89,11 @@ def test_text_position_move_to_beginning_of_next_line(_args, assert)
   assert.equal! position.current_string(6), 'Line 2'
 end
 
-def test_doc_parse_tokenize(_args, assert)
+def test_doc_parse_tokenize_header_and_markup(_args, assert)
   tokens = GTK::DocParser::Tokenizer.new(<<~S).tokens
     * DOCS: ~GTK::Args#audio~
 
     Audio docs
-
-    #+begin_src
-      def tick(args)
-        args.outputs.labels << [100, 100, 'abc']
-      end
-    #+end_src
   S
 
   assert.equal! tokens, [
@@ -111,6 +105,25 @@ def test_doc_parse_tokenize(_args, assert)
     :newline,
     :newline,
     'Audio docs',
+    :newline
+  ]
+end
+
+def test_doc_parse_tokenize_code_block(_args, assert)
+  tokens = GTK::DocParser::Tokenizer.new(<<~S).tokens
+    Some Text
+
+    #+begin_src
+      def tick(args)
+        args.outputs.labels << [100, 100, 'abc']
+      end
+    #+end_src
+
+    More Text
+  S
+
+  assert.equal! tokens, [
+    'Some Text',
     :newline,
     :newline,
     :code_block_start,
@@ -120,7 +133,10 @@ def test_doc_parse_tokenize(_args, assert)
     :newline,
     'end',
     :newline,
-    :code_block_end
+    :code_block_end,
+    :newline,
+    'More Text',
+    :newline
   ]
 end
 
