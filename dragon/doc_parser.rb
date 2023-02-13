@@ -37,6 +37,18 @@ module GTK
             finish_text
             @tokens << :h1
             @text_position.move_by 2
+          elsif @text_position.beginning_of_line? && @text_position.current_string(3) == '** '
+            finish_text
+            @tokens << :h2
+            @text_position.move_by 3
+          elsif @text_position.beginning_of_line? && @text_position.current_string(4) == '*** '
+            finish_text
+            @tokens << :h3
+            @text_position.move_by 4
+          elsif @text_position.beginning_of_line? && @text_position.current_string(5) == '**** '
+            finish_text
+            @tokens << :h4
+            @text_position.move_by 5
           elsif @text_position.beginning_of_line? && @text_position.current_string(11) == '#+begin_src'
             finish_text
             @tokens << :code_block_start
@@ -166,8 +178,8 @@ module GTK
         last_element = @elements.last
 
         case token
-        when :h1
-          element = { type: :h1, children: [] }
+        when :h1, :h2, :h3, :h4
+          element = { type: token, children: [] }
           @elements << element
           HeaderMode.new(element[:children], parent_mode: self)
         when :code_block_start

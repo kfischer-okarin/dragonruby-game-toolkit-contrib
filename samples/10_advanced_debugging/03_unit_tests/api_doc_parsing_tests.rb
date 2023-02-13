@@ -92,6 +92,9 @@ end
 def test_doc_parse_tokenize_header_and_markup(_args, assert)
   tokens = GTK::DocParser::Tokenizer.new(<<~S).tokens
     * DOCS: ~GTK::Args#audio~
+    ** Header 2
+    *** Header 3
+    **** Header 4
 
     Audio docs
   S
@@ -102,6 +105,15 @@ def test_doc_parse_tokenize_header_and_markup(_args, assert)
     :tilde,
     'GTK::Args#audio',
     :tilde,
+    :newline,
+    :h2,
+    'Header 2',
+    :newline,
+    :h3,
+    'Header 3',
+    :newline,
+    :h4,
+    'Header 4',
     :newline,
     :newline,
     'Audio docs',
@@ -140,9 +152,12 @@ def test_doc_parse_tokenize_code_block(_args, assert)
   ]
 end
 
-def test_doc_parse_header_code_text(_args, assert)
+def test_doc_parse_headers_code_text(_args, assert)
   elements = GTK::ApiDocExport.parse_doc_entry <<~S
     * DOCS: ~GTK::Args#audio~
+    ** Header 2
+    *** Header 3
+    **** Header 4
 
     Audio docs
   S
@@ -155,6 +170,9 @@ def test_doc_parse_header_code_text(_args, assert)
         { type: :code, children: ['GTK::Args#audio'] }
       ]
     },
+    { type: :h2, children: ['Header 2'] },
+    { type: :h3, children: ['Header 3'] },
+    { type: :h4, children: ['Header 4'] },
     'Audio docs'
   ]
 end
