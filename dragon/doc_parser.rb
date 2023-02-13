@@ -31,50 +31,49 @@ module GTK
 
       def tokenize
         until @text_position.end_of_string?
-          char = @text_position.current_char
-
-          if @text_position.beginning_of_line? && @text_position.current_string(2) == '* '
+          if @text_position.beginning_of_line? && consume('* ')
             finish_text
             @tokens << :h1
-            @text_position.move_by 2
-          elsif @text_position.beginning_of_line? && @text_position.current_string(3) == '** '
+          elsif @text_position.beginning_of_line? && consume('** ')
             finish_text
             @tokens << :h2
-            @text_position.move_by 3
-          elsif @text_position.beginning_of_line? && @text_position.current_string(4) == '*** '
+          elsif @text_position.beginning_of_line? && consume('*** ')
             finish_text
             @tokens << :h3
-            @text_position.move_by 4
-          elsif @text_position.beginning_of_line? && @text_position.current_string(5) == '**** '
+          elsif @text_position.beginning_of_line? && consume('**** ')
             finish_text
             @tokens << :h4
-            @text_position.move_by 5
-          elsif @text_position.beginning_of_line? && @text_position.current_string(11) == '#+begin_src'
+          elsif @text_position.beginning_of_line? && consume('#+begin_src')
             finish_text
             @tokens << :code_block_start
             @text_position.move_to_beginning_of_next_line
             @indent = calc_indent @text_position.current_line
-          elsif @text_position.beginning_of_line? && @text_position.current_string(9) == '#+end_src'
+          elsif @text_position.beginning_of_line? && consume('#+end_src')
             finish_text
             @tokens << :code_block_end
             @text_position.move_to_beginning_of_next_line
             @indent = 0
-          elsif char == '~'
+          elsif consume('~')
             finish_text
             @tokens << :tilde
-            @text_position.move_by 1
-          elsif char == "\n"
+          elsif consume("\n")
             finish_text
             @tokens << :newline
-            @text_position.move_by 1
           else
-            @current_text << char
+            @current_text << @text_position.current_char
             @text_position.move_by 1
           end
         end
       end
 
       private
+
+      def consume(string)
+        return false unless @text_position.current_string(string.length) == string
+
+        @text_position.move_by string.length
+        true
+      end
 
       def finish_text
         return if @current_text.empty?
