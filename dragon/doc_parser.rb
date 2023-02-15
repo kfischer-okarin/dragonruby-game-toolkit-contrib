@@ -47,19 +47,24 @@ module GTK
             finish_text
             @tokens << :code_block_start
             @text_position.move_to_beginning_of_next_line
-            @indent = calc_indent @text_position.current_line
           elsif @text_position.beginning_of_line? && consume('#+end_src')
             finish_text
             @tokens << :code_block_end
             @text_position.move_to_beginning_of_next_line
-            @indent = 0
           elsif consume('~')
             finish_text
+            finish_indent
             @tokens << :tilde
           elsif consume("\n")
             finish_text
+            finish_indent
             @tokens << :newline
           else
+            if (@text_position.beginning_of_line? || @indent.positive?) && consume(' ')
+              @indent += 1
+              next
+            end
+            finish_indent
             @current_text << @text_position.current_char
             @text_position.move_by 1
           end
@@ -78,8 +83,15 @@ module GTK
       def finish_text
         return if @current_text.empty?
 
-        @tokens << @current_text[@indent..-1]
+        @tokens << @current_text
         @current_text = ''
+      end
+
+      def finish_indent
+        return unless @indent.positive?
+
+        @tokens << { indent: @indent }
+        @indent = 0
       end
 
       def calc_indent(line)
@@ -223,6 +235,8 @@ module GTK
       def initialize(elements, parent_mode:)
         @elements = elements
         @parent_mode = parent_mode
+        @block_indent = nil
+        @line_indent = nil
       end
 
       def parse_token(token)
@@ -230,9 +244,18 @@ module GTK
         when :code_block_end
           @parent_mode
         when String
-          @elements << token
+          string = token
+          string = ' ' * (@line_indent - @block_indent) + string if @line_indent
+          @elements << string
           self
         when :newline
+          self
+        when Hash
+          if token.key? :indent
+            @line_indent = token[:indent]
+            # Indentation of the first line is the indentation of the block
+            @block_indent ||= @line_indent
+          end
           self
         end
       end
