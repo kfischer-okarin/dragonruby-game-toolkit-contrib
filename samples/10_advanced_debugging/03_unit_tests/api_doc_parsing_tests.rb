@@ -155,6 +155,37 @@ def test_doc_parse_tokenize_code_block(_args, assert)
   ]
 end
 
+def test_doc_parse_tokenize_ul(_args, assert)
+  tokens = GTK::DocParser::Tokenizer.new(<<~S).tokens
+    Text
+
+    - ~id~ List one
+      This is a description
+    - ~sample_rate~ abc
+  S
+
+  assert.equal! tokens, [
+    'Text',
+    :newline,
+    :newline,
+    :ul,
+    :tilde,
+    'id',
+    :tilde,
+    ' List one',
+    :newline,
+    { indent: 2 },
+    'This is a description',
+    :newline,
+    :ul,
+    :tilde,
+    'sample_rate',
+    :tilde,
+    ' abc',
+    :newline
+  ]
+end
+
 def test_doc_parse_headers_code_text(_args, assert)
   elements = GTK::ApiDocExport.parse_doc_entry <<~S
     * DOCS: ~GTK::Args#audio~
@@ -177,6 +208,37 @@ def test_doc_parse_headers_code_text(_args, assert)
     { type: :h3, children: ['Header 3'] },
     { type: :h4, children: ['Header 4'] },
     'Audio docs'
+  ]
+end
+
+def test_doc_parse_ul(_args, assert)
+  elements = GTK::ApiDocExport.parse_doc_entry <<~S
+    Text
+
+    - ~id~ List one
+      This is a description
+    - ~sample_rate~ abc
+
+    More Text
+  S
+
+  assert.equal! elements, [
+    'Text',
+    {
+      type: :ul,
+      children: [
+        { type: :code, children: ['id'] },
+        ' List one This is a description'
+      ]
+    },
+    {
+      type: :ul,
+      children: [
+        { type: :code, children: ['sample_rate'] },
+        ' abc'
+      ]
+    },
+    'More Text'
   ]
 end
 

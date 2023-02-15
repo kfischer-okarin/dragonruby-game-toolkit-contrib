@@ -51,6 +51,9 @@ module GTK
             finish_text
             @tokens << :code_block_end
             @text_position.move_to_beginning_of_next_line
+          elsif @text_position.beginning_of_line? && consume('- ')
+            finish_text
+            @tokens << :ul
           elsif consume('~')
             finish_text
             finish_indent
@@ -217,6 +220,10 @@ module GTK
           element = { type: :code_block, children: [] }
           @elements << element
           CodeBlockMode.new(element[:children], parent_mode: self)
+        when :ul
+          element = { type: :ul, children: [] }
+          @elements << element
+          ListMode.new(element[:children], parent_mode: self)
         else
           super
         end
@@ -283,6 +290,30 @@ module GTK
         when :tilde
           @parent_mode
         else
+          super
+        end
+      end
+    end
+
+    class ListMode < TextMode
+      def initialize(elements, parent_mode:)
+        super(elements)
+        @parent_mode = parent_mode
+        @after_newline = true
+      end
+
+      def parse_token(token)
+        case token
+        when :newline
+          return @parent_mode if @after_newline
+
+          @after_newline = true
+          super
+        when :ul
+          @after_newline = false
+          @parent_mode.parse_token(token)
+        else
+          @after_newline = false
           super
         end
       end
