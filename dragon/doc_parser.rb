@@ -58,6 +58,14 @@ module GTK
             finish_text
             finish_indent
             @tokens << :tilde
+          elsif consume('[[')
+            finish_text
+            finish_indent
+            @tokens << :link_start
+          elsif consume(']]')
+            finish_text
+            finish_indent
+            @tokens << :link_end
           elsif consume("\n")
             finish_text
             finish_indent
@@ -196,6 +204,10 @@ module GTK
           element = { type: :code, children: [] }
           @elements << element
           MarkupMode.new(element[:children], parent_mode: self, end_token: :tilde)
+        when :link_start
+          element = { type: :a, children: [] }
+          @elements << element
+          MarkupMode.new(element[:children], parent_mode: self, end_token: :link_end)
         when String
           if last_element.is_a?(String)
             @elements[-1] = "#{last_element} #{token}"
