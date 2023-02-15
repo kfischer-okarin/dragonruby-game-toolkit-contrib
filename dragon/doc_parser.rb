@@ -195,7 +195,7 @@ module GTK
         when :tilde
           element = { type: :code, children: [] }
           @elements << element
-          CodeMode.new(element[:children], parent_mode: self)
+          MarkupMode.new(element[:children], parent_mode: self, end_token: :tilde)
         when String
           if last_element.is_a?(String)
             @elements[-1] = "#{last_element} #{token}"
@@ -279,15 +279,16 @@ module GTK
       end
     end
 
-    class CodeMode < TextMode
-      def initialize(elements, parent_mode:)
+    class MarkupMode < TextMode
+      def initialize(elements, parent_mode:, end_token:)
         super(elements)
         @parent_mode = parent_mode
+        @end_token = end_token
       end
 
       def parse_token(token)
         case token
-        when :tilde
+        when @end_token
           @parent_mode
         else
           super
