@@ -180,7 +180,7 @@ module GTK
       end
     end
 
-    class RootMode
+    class TextMode
       def initialize(elements)
         @elements = elements
       end
@@ -189,14 +189,10 @@ module GTK
         last_element = @elements.last
 
         case token
-        when :h1, :h2, :h3, :h4
-          element = { type: token, children: [] }
+        when :tilde
+          element = { type: :code, children: [] }
           @elements << element
-          HeaderMode.new(element[:children], parent_mode: self)
-        when :code_block_start
-          element = { type: :code_block, children: [] }
-          @elements << element
-          CodeBlockMode.new(element[:children], parent_mode: self)
+          CodeMode.new(element[:children], parent_mode: self)
         when String
           if last_element.is_a?(String)
             @elements[-1] = "#{last_element} #{token}"
@@ -210,23 +206,38 @@ module GTK
       end
     end
 
-    class HeaderMode
+    class RootMode < TextMode
+      def parse_token(token)
+        case token
+        when :h1, :h2, :h3, :h4
+          element = { type: token, children: [] }
+          @elements << element
+          HeaderMode.new(element[:children], parent_mode: self)
+        when :code_block_start
+          element = { type: :code_block, children: [] }
+          @elements << element
+          CodeBlockMode.new(element[:children], parent_mode: self)
+        else
+          super
+        end
+      end
+    end
+
+    class HeaderMode < TextMode
       def initialize(elements, parent_mode:)
-        @elements = elements
+        super(elements)
         @parent_mode = parent_mode
       end
 
       def parse_token(token)
         case token
-        when :tilde
-          element = { type: :code, children: [] }
-          @elements << element
-          CodeMode.new(element[:children], parent_mode: self)
         when String
           @elements << token
           self
         when :newline
           @parent_mode
+        else
+          super
         end
       end
     end
@@ -261,19 +272,18 @@ module GTK
       end
     end
 
-    class CodeMode
+    class CodeMode < TextMode
       def initialize(elements, parent_mode:)
-        @elements = elements
+        super(elements)
         @parent_mode = parent_mode
       end
 
       def parse_token(token)
         case token
-        when String
-          @elements << token
-          self
         when :tilde
           @parent_mode
+        else
+          super
         end
       end
     end
