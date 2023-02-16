@@ -59,6 +59,8 @@ module GTK
         case object
         when String
           object.gsub('"', '\"').inspect
+        when Symbol
+          object.to_s.inspect
         when Hash
           "{#{object.map { |k, v| "#{k.to_s.inspect}: #{build_json(v)}" }.join(',')}}"
         when Array
