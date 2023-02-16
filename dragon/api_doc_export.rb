@@ -12,8 +12,8 @@ module GTK
             entry_name: entry_name(klass, method_name),
             raw_text: klass.send(doc_method)
           }
-          entry[:parsed_text] = parse_doc_entry(entry[:raw_text])
           puts "Exporting docs for #{entry[:entry_name]}"
+          entry[:parsed_text] = parse_doc_entry(entry[:raw_text])
           entries << entry
         end
 

@@ -9,7 +9,10 @@ module GTK
       tokens = Tokenizer.new(doc_string).tokens
 
       tokens.each do |token|
-        @mode = @mode.parse_token token
+        next_mode = @mode.parse_token token
+        raise "Unexpected token: #{token.inspect} (#{@mode.class})" unless next_mode
+
+        @mode = next_mode
       end
 
       @elements
