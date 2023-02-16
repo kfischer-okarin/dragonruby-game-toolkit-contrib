@@ -28,12 +28,26 @@ module GTK
         @tokens = []
         @current_text = ''
         @indent = 0
+        @inside_code_block = false
 
         tokenize
       end
 
       def tokenize
         until @text_position.end_of_string?
+          if @inside_code_block
+            if @text_position.beginning_of_line? && consume('#+end_src')
+              finish_text
+              @tokens << :code_block_end
+              @text_position.move_to_beginning_of_next_line
+              @inside_code_block = false
+            else
+              consume_as_text
+            end
+
+            next
+          end
+
           if @text_position.beginning_of_line? && consume('* ')
             finish_text
             @tokens << :h1
@@ -50,10 +64,7 @@ module GTK
             finish_text
             @tokens << :code_block_start
             @text_position.move_to_beginning_of_next_line
-          elsif @text_position.beginning_of_line? && consume('#+end_src')
-            finish_text
-            @tokens << :code_block_end
-            @text_position.move_to_beginning_of_next_line
+            @inside_code_block = true
           elsif @text_position.beginning_of_line? && consume('- ')
             finish_text
             @tokens << :ul
@@ -69,23 +80,27 @@ module GTK
             finish_text
             finish_indent
             @tokens << :link_end
-          elsif consume("\n")
-            finish_text
-            finish_indent
-            @tokens << :newline
           else
-            if (@text_position.beginning_of_line? || @indent.positive?) && consume(' ')
-              @indent += 1
-              next
-            end
-            finish_indent
-            @current_text << @text_position.current_char
-            @text_position.move_by 1
+            consume_as_text
           end
         end
       end
 
       private
+
+      def consume_as_text
+        if (@text_position.beginning_of_line? || @indent.positive?) && consume(' ')
+          @indent += 1
+        elsif consume("\n")
+          finish_text
+          finish_indent
+          @tokens << :newline
+        else
+          finish_indent
+          @current_text << @text_position.current_char
+          @text_position.move_by 1
+        end
+      end
 
       def consume(string)
         return false unless @text_position.current_string(string.length) == string

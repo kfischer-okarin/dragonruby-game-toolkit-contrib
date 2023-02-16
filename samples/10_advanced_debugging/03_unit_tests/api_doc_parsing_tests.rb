@@ -127,6 +127,7 @@ def test_doc_parse_tokenize_code_block(_args, assert)
 
     #+begin_src
       def tick(args)
+        # Comment with a ~tilde~ or [[link]]
         args.outputs.labels << [100, 100, 'abc']
       end
     #+end_src
@@ -141,6 +142,9 @@ def test_doc_parse_tokenize_code_block(_args, assert)
     :code_block_start,
     { indent: 2 },
     'def tick(args)',
+    :newline,
+    { indent: 4 },
+    '# Comment with a ~tilde~ or [[link]]',
     :newline,
     { indent: 4 },
     'args.outputs.labels << [100, 100, \'abc\']',
